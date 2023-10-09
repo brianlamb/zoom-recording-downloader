@@ -37,7 +37,7 @@ APP_VERSION = "3.0 (OAuth)"
 
 API_ENDPOINT_USER_LIST = "https://api.zoom.us/v2/users"
 
-RECORDING_START_YEAR = datetime.date.today().year
+RECORDING_START_YEAR = 2020 #datetime.date.today().year
 RECORDING_START_MONTH = 1
 RECORDING_START_DAY = 1
 RECORDING_END_DATE = datetime.date.today()
@@ -342,8 +342,8 @@ def main():
                         })
                     )
 
-                    # truncate URL to 64 characters
-                    truncated_url = download_url[0:64] + "..."
+                    # truncate URL to 126 characters
+                    truncated_url = download_url[0:126] + "..."
                     print(
                         f"==> Downloading ({index + 1} of {total_count}) as {recording_type}: "
                         f"{recording_id}: {truncated_url}"
