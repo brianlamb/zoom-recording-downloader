@@ -18,6 +18,7 @@ import os
 import re as regex
 import signal
 import sys as system
+import time
 
 # installed libraries
 import dateutil.parser as parser
@@ -368,6 +369,7 @@ def main():
                         f"==> Downloading ({index + 1} of {total_count}) as {recording_type}: "
                         f"{recording_id}: {truncated_url}"
                     )
+                    time.sleep(22)
                     success |= download_recording(download_url, email, filename, folder_name)
 
                 else:
