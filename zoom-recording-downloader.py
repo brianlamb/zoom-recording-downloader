@@ -10,7 +10,7 @@
 # Website:      https://github.com/ricardorodrigues-ca/zoom-recording-downloader
 # Forked from:  https://gist.github.com/danaspiegel/c33004e52ffacb60c24215abf8301680
 
-# system libraries
+# System modules
 import base64
 import datetime
 import json
@@ -18,12 +18,14 @@ import os
 import re as regex
 import signal
 import sys as system
+import time
 
-# installed libraries
+# Installed modules
 import dateutil.parser as parser
 import pathvalidate as path_validate
 import requests
 import tqdm as progress_bar
+<<<<<<< HEAD
 
 CONF_PATH = "zoom-recording-downloader.conf"
 with open(CONF_PATH, encoding="utf-8-sig") as json_file:
@@ -45,6 +47,9 @@ DOWNLOAD_DIRECTORY = 'downloads'
 COMPLETED_MEETING_IDS_LOG = 'completed-downloads.log'
 COMPLETED_MEETING_IDS = set()
 
+=======
+from zoneinfo import ZoneInfo
+>>>>>>> 4bf978deb416cb09e48becf35a3f77eacf79105d
 
 class Color:
     PURPLE = "\033[95m"
@@ -57,6 +62,54 @@ class Color:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
     END = "\033[0m"
+
+CONF_PATH = "zoom-recording-downloader.conf"
+
+# Load configuration file and check for proper JSON syntax
+try:
+    with open(CONF_PATH, encoding="utf-8-sig") as json_file:
+        CONF = json.loads(json_file.read())
+except json.JSONDecodeError as e:
+    print(f"{Color.RED}### Error parsing JSON in {CONF_PATH}: {e}")
+    system.exit(1)
+except FileNotFoundError:
+    print(f"{Color.RED}### Configuration file {CONF_PATH} not found")
+    system.exit(1)
+except Exception as e:
+    print(f"{Color.RED}### Unexpected error: {e}")
+    system.exit(1)
+
+def config(section, key, default=''):
+    try:
+        return CONF[section][key]
+    except KeyError:
+        if default == LookupError:
+            print(f"{Color.RED}### No value provided for {section}:{key} in {CONF_PATH}")
+            system.exit(1)
+        else:
+            return default
+
+ACCOUNT_ID = config("OAuth", "account_id", LookupError)
+CLIENT_ID = config("OAuth", "client_id", LookupError)
+CLIENT_SECRET = config("OAuth", "client_secret", LookupError)
+
+APP_VERSION = "3.0 (OAuth)"
+
+API_ENDPOINT_USER_LIST = "https://api.zoom.us/v2/users"
+
+RECORDING_START_YEAR = config("Recordings", "start_year", datetime.date.today().year)
+RECORDING_START_MONTH = config("Recordings", "start_month", 1)
+RECORDING_START_DAY = config("Recordings", "start_day", 1)
+RECORDING_START_DATE = parser.parse(config("Recordings", "start_date", f"{RECORDING_START_YEAR}-{RECORDING_START_MONTH}-{RECORDING_START_DAY}"))
+RECORDING_END_DATE = parser.parse(config("Recordings", "end_date", str(datetime.date.today())))
+DOWNLOAD_DIRECTORY = config("Storage", "download_dir", 'downloads')
+COMPLETED_MEETING_IDS_LOG = config("Storage", "completed_log", 'completed-downloads.log')
+COMPLETED_MEETING_IDS = set()
+
+MEETING_TIMEZONE = ZoneInfo(config("Recordings", "timezone", 'UTC'))
+MEETING_STRFTIME = config("Recordings", "strftime", '%Y.%m.%d - %I.%M %p UTC')
+MEETING_FILENAME = config("Recordings", "filename", '{meeting_time} - {topic} - {rec_type} - {recording_id}.{file_extension}')
+MEETING_FOLDER = config("Recordings", "folder", '{topic} - {meeting_time}')
 
 
 def load_access_token():
@@ -127,7 +180,7 @@ def get_users():
 
 
 def format_filename(params):
-    file_extension = params["file_extension"]
+    file_extension = params["file_extension"].lower()
     recording = params["recording"]
     recording_id = params["recording_id"]
     recording_type = params["recording_type"]
@@ -135,12 +188,16 @@ def format_filename(params):
     invalid_chars_pattern = r'[<>:"/\\|?*\x00-\x1F]'
     topic = regex.sub(invalid_chars_pattern, '', recording["topic"])
     rec_type = recording_type.replace("_", " ").title()
-    meeting_time = parser.parse(recording["start_time"]).strftime("%Y.%m.%d - %I.%M %p UTC")
+    meeting_time_utc = parser.parse(recording["start_time"]).replace(tzinfo=datetime.timezone.utc)
+    meeting_time_local = meeting_time_utc.astimezone(MEETING_TIMEZONE)
+    year = meeting_time_local.strftime("%Y")
+    month = meeting_time_local.strftime("%m")
+    day = meeting_time_local.strftime("%d")
+    meeting_time = meeting_time_local.strftime(MEETING_STRFTIME)
 
-    return (
-        f"{meeting_time} - {topic} - {rec_type} - {recording_id}.{file_extension.lower()}",
-        f"{topic} - {meeting_time}"
-    )
+    filename = MEETING_FILENAME.format(**locals())
+    folder = MEETING_FOLDER.format(**locals())
+    return (filename, folder)
 
 
 def get_downloads(recording):
@@ -192,7 +249,7 @@ def list_recordings(email):
     recordings = []
 
     for start, end in per_delta(
-        datetime.date(RECORDING_START_YEAR, RECORDING_START_MONTH, RECORDING_START_DAY),
+        RECORDING_START_DATE,
         RECORDING_END_DATE,
         datetime.timedelta(days=30)
     ):
@@ -223,7 +280,7 @@ def download_recording(download_url, email, filename, folder_name):
     block_size = 32 * 1024  # 32 Kibibytes
 
     # create TQDM progress bar
-    prog_bar = progress_bar.tqdm(total=total_size, unit="iB", unit_scale=True)
+    prog_bar = progress_bar.tqdm(dynamic_ncols=True, total=total_size, unit="iB", unit_scale=True)
     try:
         with open(full_filename, "wb") as fd:
             for chunk in response.iter_content(block_size):
@@ -342,12 +399,18 @@ def main():
                         })
                     )
 
+<<<<<<< HEAD
                     # truncate URL to 126 characters
                     truncated_url = download_url[0:126] + "..."
+=======
+                    # truncate URL to 42 characters
+                    truncated_url = download_url[0:42] + "..."
+>>>>>>> 4bf978deb416cb09e48becf35a3f77eacf79105d
                     print(
                         f"==> Downloading ({index + 1} of {total_count}) as {recording_type}: "
                         f"{recording_id}: {truncated_url}"
                     )
+                    time.sleep(22)
                     success |= download_recording(download_url, email, filename, folder_name)
 
                 else:
