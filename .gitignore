@@ -10,11 +10,29 @@ __pycache__/*
 # Ignore 'downloads' folder
 *downloads*
 
-# Ignore 'completed-downloads.log' file
-completed-downloads.log
+# Ignore log files
+*.log
 
 # Ignore Visual Studio Code Workspace
 *.code-workspace
 
 # Ignore conf file
 zoom-recording-downloader.conf
+
+# Ignore vscode settings
+.vscode
+
+# Ignore Python virtual environment
+venv
+
+# Ignore Python bytecode
+*.pyc
+
+# Ignore Python cache
+__pycache__
+
+# Ignore flake8 cache
+.flake8
+
+# Ignore Idea files
+.idea

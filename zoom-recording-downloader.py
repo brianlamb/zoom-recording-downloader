@@ -10,7 +10,7 @@
 # Website:      https://github.com/ricardorodrigues-ca/zoom-recording-downloader
 # Forked from:  https://gist.github.com/danaspiegel/c33004e52ffacb60c24215abf8301680
 
-# system libraries
+# System modules
 import base64
 import datetime
 import json
@@ -20,7 +20,7 @@ import signal
 import sys as system
 import time
 
-# installed libraries
+# Installed modules
 import dateutil.parser as parser
 import pathvalidate as path_validate
 import requests
@@ -40,8 +40,20 @@ class Color:
     END = "\033[0m"
 
 CONF_PATH = "zoom-recording-downloader.conf"
-with open(CONF_PATH, encoding="utf-8-sig") as json_file:
-    CONF = json.loads(json_file.read())
+
+# Load configuration file and check for proper JSON syntax
+try:
+    with open(CONF_PATH, encoding="utf-8-sig") as json_file:
+        CONF = json.loads(json_file.read())
+except json.JSONDecodeError as e:
+    print(f"{Color.RED}### Error parsing JSON in {CONF_PATH}: {e}")
+    system.exit(1)
+except FileNotFoundError:
+    print(f"{Color.RED}### Configuration file {CONF_PATH} not found")
+    system.exit(1)
+except Exception as e:
+    print(f"{Color.RED}### Unexpected error: {e}")
+    system.exit(1)
 
 def config(section, key, default=''):
     try:
@@ -244,7 +256,7 @@ def download_recording(download_url, email, filename, folder_name):
     block_size = 32 * 1024  # 32 Kibibytes
 
     # create TQDM progress bar
-    prog_bar = progress_bar.tqdm(total=total_size, unit="iB", unit_scale=True)
+    prog_bar = progress_bar.tqdm(dynamic_ncols=True, total=total_size, unit="iB", unit_scale=True)
     try:
         with open(full_filename, "wb") as fd:
             for chunk in response.iter_content(block_size):
@@ -363,8 +375,8 @@ def main():
                         })
                     )
 
-                    # truncate URL to 64 characters
-                    truncated_url = download_url[0:64] + "..."
+                    # truncate URL to 42 characters
+                    truncated_url = download_url[0:42] + "..."
                     print(
                         f"==> Downloading ({index + 1} of {total_count}) as {recording_type}: "
                         f"{recording_id}: {truncated_url}"
